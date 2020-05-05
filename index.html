@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <title>Where is that dang K-Mart</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin="" />
+    <style>
+      body {
+      padding: 0;
+      margin: 0;
+    }
+    html, body, #map {
+      height: 100%;
+      width: 100vw;
+    }
+    div.info {
+      background-color: white;
+      text-align: center;
+      padding: 0 10px;
+      border: 1px solid black;
+    }
+    div.popuptext {
+      text-align: center;
+      font-size: 12pt;
+    }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+  </body>
+  <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+  <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.3.0"></script>
+  <script>
+  var map = L.map('map')
+    .setView([39.8333333, -98.585522], 4);
+  var layer = new L.StamenTileLayer('toner');
+  map.addLayer(layer);
+
+  var xhr = new XMLHttpRequest();
+
+  xhr.open('GET', './kmarts.json', true);
+
+  function onEachFeature(feature, layer) {
+    if (feature.properties && feature.properties.address) {
+      var popup = `
+        <div class="popuptext">
+        <a href="https://www.google.com/maps/search/?api=1&query=${feature.geometry.coordinates[1]},${feature.geometry.coordinates[0]}" target="_blank">        
+        ${feature.properties.address}</a><br>
+        ${feature.properties.city}, ${feature.properties.zip}<br>
+        <a href="tel:${feature.properties.phone_number}">${feature.properties.phone_number}</a>
+        </div>
+      `;
+      layer.bindPopup(popup);
+    }
+  }
+
+  xhr.onload = function(e) {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        var data = JSON.parse(xhr.responseText);
+        L.geoJSON(data, { onEachFeature: onEachFeature })
+          .addTo(map);
+
+        var legend = L.control({position: 'topright'});
+
+        legend.onAdd = function(map) {
+          var div = L.DomUtil.create('div', 'info legend');
+          div.innerHTML = `<p><b>${data.features.length} K-Marts</b><br>Updated ${data.updated}</p>`;
+          return div;
+        };
+
+        legend.addTo(map);
+
+      } else {
+        console.error(xhr.statusText);
+      }
+    }
+  };
+
+  xhr.onerror = function(e) {
+    console.error(xhr.statusText);
+  };
+
+  xhr.send(null);
+  </script>
+
+</html>
